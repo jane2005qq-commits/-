@@ -257,6 +257,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
             };
+            // 簡單處理 2D 視覺化: 取最高樓高跟總樓層畫圖
+            let h = 3.2, f = 3;
             if(currentMode === 'parametric') {
                  h = parseFloat(dimY.value);
                  f = parseInt(floors.value);
