@@ -234,10 +234,29 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // 顯示下載按鈕
             downloadBtn.style.display = 'inline-block';
-            downloadBtn.href = `/api/download_dxf?id=${data.download_id}`;
-            
-            // 簡單處理 2D 視覺化: 取最高樓高跟總樓層畫圖
-            let h = 3.2, f = 3;
+            downloadBtn.onclick = (e) => {
+                e.preventDefault();
+                // 從 base64 解碼檔案內容
+                const byteCharacters = atob(data.dxf_base64);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], {type: 'application/dxf'});
+                
+                // 建立下載連結並觸發
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'structure.dxf';
+                document.body.appendChild(a);
+                a.click();
+                
+                // 清理
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            };
             if(currentMode === 'parametric') {
                  h = parseFloat(dimY.value);
                  f = parseInt(floors.value);

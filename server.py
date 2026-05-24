@@ -131,32 +131,31 @@ def process_design_data(data):
     dxf_path = f"structure_{session_id}.dxf"
     generate_dxf_from_geometry(data, dxf_path)
     
+    # 讀取 DXF 檔案並轉換為 Base64
+    with open(dxf_path, 'rb') as f:
+        dxf_bytes = f.read()
+    import base64
+    dxf_b64 = base64.b64encode(dxf_bytes).decode('utf-8')
+    
     # 轉為噸
     total_rebar_weight_ton = total_rebar_weight / 1000.0
+    
+    # 清理暫存檔案 (避免伺服器硬碟爆滿或多人衝突)
+    import os
+    for p in [test_json_path, frame_json_path, dxf_path]:
+        if os.path.exists(p):
+            try:
+                os.remove(p)
+            except:
+                pass
     
     return jsonify({
         "elements": elements,
         "issues": issues,
         "total_concrete_volume": total_concrete_volume,
         "total_rebar_weight_ton": total_rebar_weight_ton,
-        "download_id": session_id
+        "dxf_base64": dxf_b64
     })
-
-@app.route('/api/download_dxf')
-def download_dxf():
-    file_id = request.args.get('id', '')
-    if file_id:
-        path = f"structure_{file_id}.dxf"
-    else:
-        path = "structure.dxf"
-        
-    if os.path.exists(path):
-        response = send_file(path, as_attachment=True, download_name="structure.dxf")
-        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-        response.headers["Pragma"] = "no-cache"
-        response.headers["Expires"] = "0"
-        return response
-    return "File not found", 404
 
 if __name__ == '__main__':
     print("Antigravity Structure Design Server Started!")
