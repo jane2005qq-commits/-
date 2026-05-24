@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 結構設計協作平台</title>
+    <meta name="description" content="AI Native 結構設計與法規校核系統介面">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="glass-panel">
+            <h1 id="main-title">Antigravity 結構設計協作引擎</h1>
+            <div class="actions">
+                <button id="run-ai-btn" class="btn-primary">生成設計與分析</button>
+                <a id="download-dxf-btn" class="btn-secondary" style="display: none;" href="#" download="structure.dxf">下載 DXF 圖檔</a>
+            </div>
+        </header>
+
+        <!-- Main Content Layout -->
+        <main class="dashboard">
+            <!-- Left Column: Data Tables -->
+            <section class="data-section glass-panel">
+                <div class="mode-tabs">
+                    <button id="tab-parametric" class="tab-btn active">參數化生成</button>
+                    <button id="tab-cad" class="tab-btn">CAD 圖紙匯入</button>
+                </div>
+                
+                <!-- 模式 1: 參數化生成 -->
+                <div id="mode-parametric" class="mode-content active">
+                    <h2>空間尺寸輸入</h2>
+                <div class="input-grid">
+                    <div class="input-group">
+                        <label>X向長度 (m)</label>
+                        <input type="number" id="dim-x" value="10" min="3" step="0.5">
+                    </div>
+                    <div class="input-group">
+                        <label>Z向寬度 (m)</label>
+                        <input type="number" id="dim-z" value="8" min="3" step="0.5">
+                    </div>
+                    <div class="input-group">
+                        <label>單層高度 (m)</label>
+                        <input type="number" id="dim-y" value="3.2" min="2.5" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label>樓層數</label>
+                        <input type="number" id="floors" value="3" min="1" step="1">
+                    </div>
+                </div>
+
+                <div class="stair-settings" style="margin-top: 1rem; margin-bottom: 1rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px;">
+                    <div style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" id="has-stairs" checked style="width: 18px; height: 18px;">
+                        <label for="has-stairs" style="font-weight: 600; color: var(--primary);">加入 U 型雙跑樓梯</label>
+                    </div>
+                    <div class="input-grid" id="stair-params">
+                        <div class="input-group">
+                            <label>梯寬 (m)</label>
+                            <input type="number" id="stair-width" value="1.2" min="0.8" step="0.1">
+                        </div>
+                        <div class="input-group">
+                            <label>踏步深 (cm)</label>
+                            <input type="number" id="stair-tread" value="25" min="20" step="1">
+                        </div>
+                        <div class="input-group">
+                            <label>梯版厚度 (cm)</label>
+                            <input type="number" id="stair-thickness" value="15" min="10" step="1">
+                        </div>
+                    </div>
+                </div>
+                </div> <!-- 關閉 mode-parametric -->
+
+                <!-- 模式 2: CAD 圖紙匯入 -->
+                <div id="mode-cad" class="mode-content" style="display: none;">
+                    <h2>多樓層 CAD 上傳</h2>
+                    
+                    <div class="upload-mode-toggle" style="margin-bottom: 1.5rem; padding: 1rem; background: rgba(0, 112, 243, 0.05); border-radius: 8px;">
+                        <label style="margin-right: 1.5rem; cursor: pointer; color: var(--text-light); font-weight: 600;">
+                            <input type="radio" name="upload-mode" value="multi" checked style="margin-right: 0.5rem;">多個檔案 (每層一個)
+                        </label>
+                        <label style="cursor: pointer; color: var(--text-light); font-weight: 600;">
+                            <input type="radio" name="upload-mode" value="single" style="margin-right: 0.5rem;">單一檔案 (包含多層)
+                        </label>
+                    </div>
+
+                    <!-- 多個檔案模式 -->
+                    <div id="multi-file-section">
+                        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+                            請將各樓層平面圖分別存為 <b>.dxf</b> 格式。柱子畫在 <code>COLUMNS</code> 圖層，樑畫在 <code>BEAMS</code> 圖層。所有圖紙原點(0,0)必須對齊。
+                        </p>
+                        <div id="floor-list">
+                            <!-- 動態樓層清單由 JS 注入 -->
+                        </div>
+                        <button id="add-floor-btn" class="btn-secondary" style="margin-top: 1rem; width: 100%;">+ 新增樓層 DXF</button>
+                    </div>
+
+                    <!-- 單一檔案模式 -->
+                    <div id="single-file-section" style="display: none;">
+                        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+                            上傳單一 <b>.dxf</b> 檔。各樓層請加前綴 (例: <code>1F_COLUMNS</code>, <code>2F_BEAMS</code>)。請在各層基準點畫圓圈並放入 <code>BASE_POINT</code> 圖層。
+                        </p>
+                        <div class="floor-item" style="display: block;">
+                            <div class="input-group">
+                                <label>總平面圖 (.dxf)</label>
+                                <input type="file" id="single-file-input" accept=".dxf" required>
+                            </div>
+                        </div>
+                        <h3 style="font-size: 1rem; margin-top: 1.5rem; margin-bottom: 0.5rem;">定義各樓層高度 (由低到高)</h3>
+                        <div id="single-floor-heights">
+                            <!-- 動態樓高清單由 JS 注入 -->
+                        </div>
+                        <button id="add-single-height-btn" class="btn-secondary" style="margin-top: 1rem; width: 100%;">+ 新增樓層高度</button>
+                    </div>
+                </div>
+
+                <div class="material-summary" id="material-summary" style="display: none;">
+                    <div class="summary-card">
+                        <h3>總混凝土體積</h3>
+                        <p><span id="total-concrete">0</span> m³</p>
+                    </div>
+                    <div class="summary-card">
+                        <h3>總鋼筋用量</h3>
+                        <p><span id="total-rebar">0</span> 噸</p>
+                    </div>
+                </div>
+
+                <h2 style="margin-top: 1.5rem;">AI 生成結構參數與法規校核</h2>
+                <div class="table-container">
+                    <table id="structural-table">
+                        <thead>
+                            <tr>
+                                <th>元素 ID</th>
+                                <th>類型</th>
+                                <th>斷面 (b x h)</th>
+                                <th>配筋率</th>
+                                <th>法規狀態</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <!-- Data injected by JS -->
+                            <tr class="empty-row"><td colspan="5">尚未輸入參數並執行設計</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="compliance-alert" id="compliance-alert" style="display: none;">
+                    <h3>🚨 需人工複核項目 (10% 人工審核)</h3>
+                    <ul id="alert-list"></ul>
+                </div>
+            </section>
+
+            <!-- Right Column: Canvas/Visualization -->
+            <section class="visual-section glass-panel">
+                <h2>結構幾何視覺化</h2>
+                <div class="canvas-container">
+                    <canvas id="structure-canvas" width="600" height="400"></canvas>
+                    <div id="canvas-overlay" class="overlay-msg">等待輸入參數...</div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
